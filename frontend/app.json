@@ -2,6 +2,9 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
+    "permissions": [
+      "location"
+    ],
     "version": "1.0.0",
     "scheme": ["CoHabit"],
     "orientation": "portrait",

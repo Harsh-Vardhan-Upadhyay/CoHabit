@@ -20,6 +20,15 @@ const Details = () => {
   const { signOut } = useAuth();
   const { user } = useUser();
   
+  const prompts = [
+    "Enter Name",
+    "What is Your age",
+    "What is Your Hometown",
+    "Select Your Gender",
+    "Enter Languages You Speak",
+    "Enter Your Occupation",
+    "Write a Short Introduction"
+  ];
   // State variables for user input
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -107,6 +116,10 @@ const Details = () => {
     }
   };
 
+  const handleGenderSelect = (selectedGender) => {
+    setGender(selectedGender);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -119,7 +132,9 @@ const Details = () => {
           style={styles.background}
         >
           <View style={styles.innerContainer}>
-            <Text style={styles.title}>Step {currentStep + 1}</Text>
+            {/* Use custom prompt based on current step */}
+            <Text style={styles.title}>{prompts[currentStep]}</Text>
+            
             {currentStep === 0 && (
               <>
                 <TextInput
@@ -170,17 +185,26 @@ const Details = () => {
                 </TouchableOpacity>
               </>
             )}
-            {currentStep === 3 && (
+              {currentStep === 3 && (
               <>
                 <Text style={styles.genderTitle}>Select Gender:</Text>
-                <TouchableOpacity onPress={() => setGender('Male')}>
-                  <Text style={styles.genderOption}>Male</Text>
+                <TouchableOpacity
+                  style={[styles.genderOption, gender === 'Male' && styles.selectedOption]}
+                  onPress={() => handleGenderSelect('Male')}
+                >
+                  <Text style={gender === 'Male' ? styles.selectedText : styles.unselectedText}>Male</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setGender('Female')}>
-                  <Text style={styles.genderOption}>Female</Text>
+                <TouchableOpacity
+                  style={[styles.genderOption, gender === 'Female' && styles.selectedOption]}
+                  onPress={() => handleGenderSelect('Female')}
+                >
+                  <Text style={gender === 'Female' ? styles.selectedText : styles.unselectedText}>Female</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setGender('Other')}>
-                  <Text style={styles.genderOption}>Other</Text>
+                <TouchableOpacity
+                  style={[styles.genderOption, gender === 'Non-Binary' && styles.selectedOption]}
+                  onPress={() => handleGenderSelect('Non-Binary')}
+                >
+                  <Text style={gender === 'Non-Binary' ? styles.selectedText : styles.unselectedText}>Non-Binary</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button} onPress={handleNextStep}>
                   <Text style={styles.buttonText}>Next</Text>
@@ -218,13 +242,13 @@ const Details = () => {
             {currentStep === 6 && (
               <>
                 <TextInput
-                  style={[styles.input, { height: 100 }]} // Increased height for introduction
+                  style={[styles.input, { height: 100 }]}
                   placeholder="Small Introduction About You"
                   value={introduction}
                   onChangeText={setIntroduction}
                   placeholderTextColor="#ccc"
                   multiline
-                  textAlignVertical="top" // Aligns text at the top for multiline
+                  textAlignVertical="top"
                 />
                 <TouchableOpacity style={styles.button} onPress={handleNextStep}>
                   <Text style={styles.buttonText}>Finish</Text>
@@ -250,12 +274,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   innerContainer: {
-    width: 375,
+    width: '100%',
     height: 312,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+borderRadius:18,
     marginHorizontal: 'auto',
     justifyContent: 'center',
     alignItems: 'center',
@@ -269,6 +294,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 50,
     elevation: 5,
+  },
+  genderOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    width: 150,
+    justifyContent: 'center',
+  },
+  selectedOption: {
+    backgroundColor: '#000',
+  },
+  selectedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  unselectedText: {
+    color: '#000',
   },
   title: {
     fontSize: 17,
