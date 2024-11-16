@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const DeatiledProfile = () => {
+const DetailedProfile = () => {
   return (
     <View>
       <Text>DeatiledProfile</Text>
@@ -9,4 +9,4 @@ const DeatiledProfile = () => {
   )
 }
 
-export default DeatiledProfile
+export default DetailedProfile

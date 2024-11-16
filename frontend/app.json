@@ -2,7 +2,7 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
-    "sdkVersion": "52.0.0", 
+    "sdkVersion": "52.0.0",
     "platforms": ["ios", "android"],
     "newArchEnabled": true,
     "permissions": [
@@ -20,12 +20,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.frontend"
+      "bundleIdentifier": "com.anonymous.frontend",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to select and upload images.",
+        "NSCameraUsageDescription": "We need access to your camera to allow you to take and upload photos."
+      }
     },
-   
     "web": {
       "favicon": "./assets/favicon.png"
-      
     }
   }
 }

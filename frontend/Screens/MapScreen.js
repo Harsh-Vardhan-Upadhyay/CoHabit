@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Dimensions, Button, Text } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { doc, setDoc } from "firebase/firestore";
@@ -91,8 +91,14 @@ const MapScreen = ({ navigation }) => {
           />
         )}
       </MapView>
-      <View style={styles.saveButtonContainer}>
-        <Button title="Save Location" onPress={saveLocation} />
+      <View style={styles.bottomContainer}>
+        <Text style={styles.title}>Select Preferred Region</Text>
+        <Text style={styles.subtitle}>
+          Please select the preferred location{"\n"}where you're looking to find a{"\n"}roommate.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={saveLocation}>
+          <Text style={styles.buttonText}>Proceed</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -103,14 +109,53 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
+    flex: 1,
   },
-  saveButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
+  bottomContainer: {
+    width: '100%',
+    height: 239,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderRadius:18,
+    marginHorizontal: 'auto',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    }
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#3A3A3A',
+    borderRadius: 14,
+    padding: 10,
+    marginTop: 10,
+    width: '100%', // Ensures full width
+    height: 50, // Fixed height for buttons
+    alignItems: 'center',
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,

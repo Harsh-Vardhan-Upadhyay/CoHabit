@@ -2,9 +2,10 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import Signup from "./Screens/Signup";
 import Details from "./Screens/Details";
-import Home from "./Screens/ProfilePicture"; // Ensure proper naming convention for files
+import ProfilePicture from "./Screens/ProfilePicture"; 
 import { SignedIn, SignedOut } from "@clerk/clerk-expo";
 import MapScreen from "./Screens/MapScreen";
+import DetailedProfile from "./Screens/DetailedProfile";
 
 const Stack = createStackNavigator();
 
@@ -16,7 +17,8 @@ const StackNavigator = () => {
           {/* When logged in, start with Details */}
           <Stack.Screen name="Details" component={Details} />
           <Stack.Screen name="MapScreen" component={MapScreen} />
-          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Home" component={ProfilePicture} />
+          <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
         </Stack.Navigator>
       </SignedIn>
       <SignedOut>

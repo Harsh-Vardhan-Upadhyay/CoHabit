@@ -1,24 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text,TextInput,ImageBackground,StyleSheet,Animated,TouchableOpacity,KeyboardAvoidingView,Platform,TouchableWithoutFeedback,Keyboard } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, ImageBackground, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../Firebase';
 
-
-const Details = ({ navigation }) => { // Added navigation prop
+const Details = ({ navigation }) => {
   const { signOut } = useAuth();
   const { user } = useUser();
-  
+
   const prompts = [
     "Enter Name",
-    "What is Your age",
-    "What is Your Hometown",
+    "Enter Your Age and Hometown",
     "Select Your Gender",
-    "Enter Languages You Speak",
-    "Enter Your Occupation",
-    "Write a Short Introduction"
+    "Enter Know Languages and Occupation",
+    "Write a Short Introduction",
+    
   ];
-  // State variables for user input
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
@@ -27,12 +25,8 @@ const Details = ({ navigation }) => { // Added navigation prop
   const [languages, setLanguages] = useState('');
   const [occupation, setOccupation] = useState('');
   const [introduction, setIntroduction] = useState('');
-  
-  // Track which step of input the user is on
   const [currentStep, setCurrentStep] = useState(0);
-  
-  // For animation
-
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -62,7 +56,7 @@ const Details = ({ navigation }) => { // Added navigation prop
   };
 
   const handleNextStep = async () => {
-    // Save the current step's data to Firestore
+    setLoading(true);
     try {
       if (user && user.id) {
         const dataToSave = {};
@@ -71,21 +65,20 @@ const Details = ({ navigation }) => { // Added navigation prop
           dataToSave.lastName = lastName;
         } else if (currentStep === 1) {
           dataToSave.age = parseInt(age, 10);
-        } else if (currentStep === 2) {
           dataToSave.hometown = hometown;
-        } else if (currentStep === 3) {
+        } else if (currentStep === 2) {
           dataToSave.gender = gender;
-        } else if (currentStep === 4) {
+        } else if (currentStep === 3) {
           dataToSave.languages = languages;
-        } else if (currentStep === 5) {
+        } else if (currentStep === 4) {
           dataToSave.occupation = occupation;
-        } else if (currentStep === 6) {
+        } else if (currentStep === 5) {
           dataToSave.introduction = introduction;
         }
 
         await setDoc(doc(db, 'users', user.id), dataToSave, { merge: true });
 
-        if (currentStep < 6) {
+        if (currentStep < 4) {
           setCurrentStep(currentStep + 1);
         } else {
           console.log('All data saved successfully');
@@ -94,15 +87,8 @@ const Details = ({ navigation }) => { // Added navigation prop
       }
     } catch (error) {
       console.error('Error saving user information:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      console.log('Logged out successfully');
-    } catch (error) {
-      console.error('Error during sign out:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,7 +100,7 @@ const Details = ({ navigation }) => { // Added navigation prop
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100}
+      keyboardVerticalOffset={0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ImageBackground
@@ -122,9 +108,8 @@ const Details = ({ navigation }) => { // Added navigation prop
           style={styles.background}
         >
           <View style={styles.innerContainer}>
-            {/* Use custom prompt based on current step */}
             <Text style={styles.title}>{prompts[currentStep]}</Text>
-            
+
             {currentStep === 0 && (
               <>
                 <TextInput
@@ -141,9 +126,6 @@ const Details = ({ navigation }) => { // Added navigation prop
                   onChangeText={setLastName}
                   placeholderTextColor="#ccc"
                 />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Proceed</Text>
-                </TouchableOpacity>
               </>
             )}
             {currentStep === 1 && (
@@ -156,13 +138,6 @@ const Details = ({ navigation }) => { // Added navigation prop
                   keyboardType="numeric"
                   placeholderTextColor="#ccc"
                 />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Save Age</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {currentStep === 2 && (
-              <>
                 <TextInput
                   style={styles.input}
                   placeholder="Hometown"
@@ -170,14 +145,10 @@ const Details = ({ navigation }) => { // Added navigation prop
                   onChangeText={setHometown}
                   placeholderTextColor="#ccc"
                 />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Next</Text>
-                </TouchableOpacity>
               </>
             )}
-              {currentStep === 3 && (
+            {currentStep === 2 && (
               <>
-                <Text style={styles.genderTitle}>Select Gender:</Text>
                 <TouchableOpacity
                   style={[styles.genderOption, gender === 'Male' && styles.selectedOption]}
                   onPress={() => handleGenderSelect('Male')}
@@ -196,64 +167,54 @@ const Details = ({ navigation }) => { // Added navigation prop
                 >
                   <Text style={gender === 'Non-Binary' ? styles.selectedText : styles.unselectedText}>Non-Binary</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Next</Text>
-                </TouchableOpacity>
+              </>
+            )}
+
+            {currentStep === 3 && (
+              <>
+              <TextInput
+                style={styles.input}
+                placeholder="Languages Known"
+                value={languages}
+                onChangeText={setLanguages}
+                placeholderTextColor="#ccc"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Occupation"
+                value={occupation}
+                onChangeText={setOccupation}
+                placeholderTextColor="#ccc"
+              />
               </>
             )}
             {currentStep === 4 && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Languages Known"
-                  value={languages}
-                  onChangeText={setLanguages}
-                  placeholderTextColor="#ccc"
-                />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Next</Text>
-                </TouchableOpacity>
-              </>
+               <TextInput
+               style={[styles.input, { height: 138 }]}
+               placeholder="Small Introduction About You"
+               value={introduction}
+               onChangeText={setIntroduction}
+               placeholderTextColor="#ccc"
+               multiline
+               textAlignVertical="top"
+             />
             )}
-            {currentStep === 5 && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Occupation"
-                  value={occupation}
-                  onChangeText={setOccupation}
-                  placeholderTextColor="#ccc"
-                />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Next</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {currentStep === 6 && (
-              <>
-                <TextInput
-                  style={[styles.input, { height: 100 }]}
-                  placeholder="Small Introduction About You"
-                  value={introduction}
-                  onChangeText={setIntroduction}
-                  placeholderTextColor="#ccc"
-                  multiline
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                  <Text style={styles.buttonText}>Finish</Text>
-                </TouchableOpacity>
-              </>
+           
+
+            {loading ? (
+              <ActivityIndicator size="large" color="#000" />
+            ) : (
+              <TouchableOpacity style={styles.button} onPress={handleNextStep}>
+                <Text style={styles.buttonText}>{currentStep === 4 ? 'Finish' : 'Proceed'}</Text>
+              </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity style={styles.button} onPress={handleLogout}>
-            <Text style={styles.buttonText}>Log Out</Text>
-          </TouchableOpacity>
         </ImageBackground>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   background: {
@@ -262,6 +223,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+
   },
   innerContainer: {
     width: '100%',
@@ -270,7 +232,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-borderRadius:18,
+    borderRadius:18,
     marginHorizontal: 'auto',
     justifyContent: 'center',
     alignItems: 'center',
