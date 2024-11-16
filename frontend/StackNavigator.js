@@ -6,6 +6,7 @@ import ProfilePicture from "./Screens/ProfilePicture";
 import { SignedIn, SignedOut } from "@clerk/clerk-expo";
 import MapScreen from "./Screens/MapScreen";
 import DetailedProfile from "./Screens/DetailedProfile";
+import Home from "./Screens/Home";
 
 const Stack = createStackNavigator();
 
@@ -19,6 +20,7 @@ const StackNavigator = () => {
           <Stack.Screen name="MapScreen" component={MapScreen} />
           <Stack.Screen name="Home" component={ProfilePicture} />
           <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
+          <Stack.Screen name="HomeScreen" component={Home} />
         </Stack.Navigator>
       </SignedIn>
       <SignedOut>
