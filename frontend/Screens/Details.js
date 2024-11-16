@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  ImageBackground, 
-  StyleSheet, 
-  Animated, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
-  Keyboard 
-} from 'react-native';
+import { View, Text,TextInput,ImageBackground,StyleSheet,Animated,TouchableOpacity,KeyboardAvoidingView,Platform,TouchableWithoutFeedback,Keyboard } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../Firebase';
 
-const Details = () => {
+
+const Details = ({ navigation }) => { // Added navigation prop
   const { signOut } = useAuth();
   const { user } = useUser();
   
@@ -43,7 +32,7 @@ const Details = () => {
   const [currentStep, setCurrentStep] = useState(0);
   
   // For animation
-  const ageAnimation = useRef(new Animated.Value(0)).current;
+
 
   useEffect(() => {
     if (user) {
@@ -100,6 +89,7 @@ const Details = () => {
           setCurrentStep(currentStep + 1);
         } else {
           console.log('All data saved successfully');
+          navigation.navigate('MapScreen');
         }
       }
     } catch (error) {

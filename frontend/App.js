@@ -3,10 +3,6 @@ import StackNavigator from "./StackNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { ClerkProvider, ClerkLoaded ,SignedIn, SignedOut, useUser,} from '@clerk/clerk-expo'
 import React, { useEffect } from 'react';
-import { db } from './Firebase';
-
-
-import { app } from './Firebase';
 
 
 export default function App() {
