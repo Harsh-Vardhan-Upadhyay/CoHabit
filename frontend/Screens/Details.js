@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ImageBackground, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  ImageBackground, 
+  StyleSheet, 
+  TouchableOpacity, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard, 
+  ActivityIndicator 
+} from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../Firebase';
 
 const Details = ({ navigation }) => {
-  const { signOut } = useAuth();
   const { user } = useUser();
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
-  const prompts = [
-    "Enter Name",
-    "Enter Your Age and Hometown",
-    "Select Your Gender",
-    "Enter Know Languages and Occupation",
-    "Write a Short Introduction",
-    
-  ];
-
+  // User details states
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
@@ -25,8 +30,15 @@ const Details = ({ navigation }) => {
   const [languages, setLanguages] = useState('');
   const [occupation, setOccupation] = useState('');
   const [introduction, setIntroduction] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [profileCompleted, setProfileCompleted] = useState(false);
+
+  const prompts = [
+    "Enter Name",
+    "Enter Your Age and Hometown",
+    "Select Your Gender",
+    "Enter Known Languages and Occupation",
+    "Write a Short Introduction",
+  ];
 
   useEffect(() => {
     if (user) {
@@ -35,58 +47,55 @@ const Details = ({ navigation }) => {
   }, [user]);
 
   const fetchUserData = async () => {
-    if (user) {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.id));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setFirstName(userData.firstName || '');
-          setLastName(userData.lastName || '');
-          setAge(userData.age ? userData.age.toString() : '');
-          setHometown(userData.hometown || '');
-          setGender(userData.gender || '');
-          setLanguages(userData.languages || '');
-          setOccupation(userData.occupation || '');
-          setIntroduction(userData.introduction || '');
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    }
-  };
-
-  const handleNextStep = async () => {
-    setLoading(true);
     try {
-      if (user && user.id) {
-        const dataToSave = {};
-        if (currentStep === 0) {
-          dataToSave.firstName = firstName;
-          dataToSave.lastName = lastName;
-        } else if (currentStep === 1) {
-          dataToSave.age = parseInt(age, 10);
-          dataToSave.hometown = hometown;
-        } else if (currentStep === 2) {
-          dataToSave.gender = gender;
-        } else if (currentStep === 3) {
-          dataToSave.languages = languages;
-        } else if (currentStep === 4) {
-          dataToSave.occupation = occupation;
-        } else if (currentStep === 5) {
-          dataToSave.introduction = introduction;
-        }
+      const userDoc = await getDoc(doc(db, 'users', user.id));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setFirstName(data.firstName || '');
+        setLastName(data.lastName || '');
+        setAge(data.age ? data.age.toString() : '');
+        setHometown(data.hometown || '');
+        setGender(data.gender || '');
+        setLanguages(data.languages || '');
+        setOccupation(data.occupation || '');
+        setIntroduction(data.introduction || '');
+        setProfileCompleted(data.profileCompleted || false);
 
-        await setDoc(doc(db, 'users', user.id), dataToSave, { merge: true });
-
-        if (currentStep < 4) {
-          setCurrentStep(currentStep + 1);
-        } else {
-          console.log('All data saved successfully');
-          navigation.navigate('MapScreen');
+        // Redirect to the next step or DetailedProfile if already completed
+        if (data.profileCompleted) {
+          navigation.navigate('DetailedProfile');
         }
       }
     } catch (error) {
-      console.error('Error saving user information:', error);
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  const saveUserData = async () => {
+    setLoading(true);
+    try {
+      const dataToSave = {
+        firstName,
+        lastName,
+        age: parseInt(age, 10),
+        hometown,
+        gender,
+        languages,
+        occupation,
+        introduction,
+        profileCompleted: currentStep === prompts.length - 1, // Mark profile complete if last step
+      };
+
+      await setDoc(doc(db, 'users', user.id), dataToSave, { merge: true });
+
+      if (currentStep < prompts.length - 1) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        setProfileCompleted(true);
+        navigation.navigate('DetailedProfile'); // Adjust to your desired next screen
+      }
+    } catch (error) {
+      console.error('Error saving user data:', error);
     } finally {
       setLoading(false);
     }
@@ -100,7 +109,6 @@ const Details = ({ navigation }) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ImageBackground
@@ -128,6 +136,7 @@ const Details = ({ navigation }) => {
                 />
               </>
             )}
+
             {currentStep === 1 && (
               <>
                 <TextInput
@@ -147,6 +156,7 @@ const Details = ({ navigation }) => {
                 />
               </>
             )}
+
             {currentStep === 2 && (
               <>
                 <TouchableOpacity
@@ -172,40 +182,42 @@ const Details = ({ navigation }) => {
 
             {currentStep === 3 && (
               <>
-              <TextInput
-                style={styles.input}
-                placeholder="Languages Known"
-                value={languages}
-                onChangeText={setLanguages}
-                placeholderTextColor="#ccc"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Occupation"
-                value={occupation}
-                onChangeText={setOccupation}
-                placeholderTextColor="#ccc"
-              />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Known Languages"
+                  value={languages}
+                  onChangeText={setLanguages}
+                  placeholderTextColor="#ccc"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Occupation"
+                  value={occupation}
+                  onChangeText={setOccupation}
+                  placeholderTextColor="#ccc"
+                />
               </>
             )}
+
             {currentStep === 4 && (
-               <TextInput
-               style={[styles.input, { height: 138 }]}
-               placeholder="Small Introduction About You"
-               value={introduction}
-               onChangeText={setIntroduction}
-               placeholderTextColor="#ccc"
-               multiline
-               textAlignVertical="top"
-             />
+              <TextInput
+                style={[styles.input, { height: 138 }]}
+                placeholder="Short Introduction"
+                value={introduction}
+                onChangeText={setIntroduction}
+                placeholderTextColor="#ccc"
+                multiline
+                textAlignVertical="top"
+              />
             )}
-           
 
             {loading ? (
               <ActivityIndicator size="large" color="#000" />
             ) : (
-              <TouchableOpacity style={styles.button} onPress={handleNextStep}>
-                <Text style={styles.buttonText}>{currentStep === 4 ? 'Finish' : 'Proceed'}</Text>
+              <TouchableOpacity style={styles.button} onPress={saveUserData}>
+                <Text style={styles.buttonText}>
+                  {currentStep === prompts.length - 1 ? 'Finish' : 'Next'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -214,6 +226,7 @@ const Details = ({ navigation }) => {
     </KeyboardAvoidingView>
   );
 };
+
 
 
 const styles = StyleSheet.create({
