@@ -63,7 +63,7 @@ const Details = ({ navigation }) => {
 
         // Redirect to the next step or DetailedProfile if already completed
         if (data.profileCompleted) {
-          navigation.navigate('MapScreen');
+          navigation.navigate('DetailedProfile');
         }
       }
     } catch (error) {

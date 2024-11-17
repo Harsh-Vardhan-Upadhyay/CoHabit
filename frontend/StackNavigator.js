@@ -10,6 +10,7 @@ import MapScreen from "./Screens/MapScreen";
 import DetailedProfile from "./Screens/DetailedProfile";
 import Home from "./Screens/Home";
 import Chat from "./Screens/Chat";
+import Profile from "./Screens/Profile";
 
 const Stack = createStackNavigator();
 
@@ -66,6 +67,7 @@ const StackNavigator = () => {
           <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
           <Stack.Screen name="HomeScreen" component={Home} />
           <Stack.Screen name="Chat" component={Chat} />
+          <Stack.Screen name="Profile" component={Profile} />
         </Stack.Navigator>
       </SignedIn>
       <SignedOut>
