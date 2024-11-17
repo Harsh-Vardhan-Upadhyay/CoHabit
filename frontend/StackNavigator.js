@@ -11,6 +11,7 @@ import DetailedProfile from "./Screens/DetailedProfile";
 import Home from "./Screens/Home";
 import Chat from "./Screens/Chat";
 import Profile from "./Screens/Profile";
+import Model from "./Screens/Model";
 
 const Stack = createStackNavigator();
 
@@ -60,16 +61,25 @@ const StackNavigator = () => {
   return (
     <>
       <SignedIn>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialScreen}>
-          <Stack.Screen name="Details" component={Details} />
-          <Stack.Screen name="MapScreen" component={MapScreen} />
-          <Stack.Screen name="Home" component={ProfilePicture} />
-          <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
-          <Stack.Screen name="HomeScreen" component={Home} />
-          <Stack.Screen name="Chat" component={Chat} />
-          <Stack.Screen name="Profile" component={Profile} />
-        </Stack.Navigator>
-      </SignedIn>
+  <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialScreen}>
+    <Stack.Screen name="Details" component={Details} />
+    <Stack.Screen name="MapScreen" component={MapScreen} />
+    <Stack.Screen name="Home" component={ProfilePicture} />
+    <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
+    <Stack.Screen name="HomeScreen" component={Home} />
+    <Stack.Screen name="Chat" component={Chat} />
+    <Stack.Screen name="Profile" component={Profile} />
+    <Stack.Screen
+      name="Model"
+      component={Model}
+      initialParams={{ userData: user }} // Pass user data as initial params
+      options={{
+        presentation: "modal", // Makes this screen a modal
+      }}
+    />
+  </Stack.Navigator>
+</SignedIn>
+
       <SignedOut>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Signup" component={Signup} />

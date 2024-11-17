@@ -15,6 +15,7 @@ import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
 import { useNavigation } from "@react-navigation/native";
 
+
 const HomeScreen = () => {
   const [users, setUsers] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -138,18 +139,22 @@ const HomeScreen = () => {
             ref={(swiper) => (swiperRef.current = swiper)}
             cards={users}
             renderCard={(user) => (
-              <View style={styles.card}>
-                <Image
-                  source={{ uri: user.profilePicture }}
-                  style={styles.profileImage}
-                />
-                <Text style={styles.nameText}>
-                  {user.firstName}, {user.age}
-                </Text>
-                <Text style={styles.bioText}>{user.introduction}</Text>
-                <Text style={styles.bioText1}>{user.occupation}</Text>
-                <Text style={styles.bioText1}>{user.languages}</Text>
-              </View>
+              <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => navigation.navigate("Model", { user })}
+              style={styles.card}
+            >
+              <Image
+                source={{ uri: user.profilePicture }}
+                style={styles.profileImage}
+              />
+              <Text style={styles.nameText}>
+                {user.firstName}, {user.age}
+              </Text>
+              <Text style={styles.bioText}>{user.introduction}</Text>
+              <Text style={styles.bioText1}>{user.occupation}</Text>
+              <Text style={styles.bioText1}>{user.languages}</Text>
+            </TouchableOpacity>
             )}
             onSwipedRight={handleSwipeRight}
             onSwipedLeft={handleSwipeLeft}
