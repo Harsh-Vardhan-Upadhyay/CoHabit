@@ -63,7 +63,7 @@ const Details = ({ navigation }) => {
 
         // Redirect to the next step or DetailedProfile if already completed
         if (data.profileCompleted) {
-          navigation.navigate('DetailedProfile');
+          navigation.navigate('MapScreen');
         }
       }
     } catch (error) {
@@ -92,7 +92,7 @@ const Details = ({ navigation }) => {
         setCurrentStep(currentStep + 1);
       } else {
         setProfileCompleted(true);
-        navigation.navigate('DetailedProfile'); // Adjust to your desired next screen
+        navigation.navigate('MapScreen'); // Adjust to your desired next screen
       }
     } catch (error) {
       console.error('Error saving user data:', error);

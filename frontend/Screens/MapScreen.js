@@ -5,6 +5,7 @@ import * as Location from "expo-location";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
+import { getDistance } from "geolib";
 
 const MapScreen = ({ navigation }) => {
   const [region, setRegion] = useState(null); // For the map's region
