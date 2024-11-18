@@ -76,9 +76,30 @@ const HomeScreen = () => {
       );
 
       if (matchDoc.exists()) {
-        setMatches((prevMatches) => [...prevMatches, likedUser]);
-        setCurrentMatch(likedUser);
-        setShowMatchPopup(true);
+        const matchData = {
+          id: likedUser.id,
+          name: likedUser.firstName,
+          profilePicture: likedUser.profilePicture,
+        };
+  
+        // Save match data for logged-in user
+        await setDoc(doc(db, `users/${loggedInUserId}/matches`, likedUser.id), {
+          ...matchData,
+          matchedAt: new Date(),
+        });
+  
+        // Save match data for the liked user
+        await setDoc(doc(db, `users/${likedUser.id}/matches`, loggedInUserId), {
+          id: loggedInUserId,
+          name: user?.firstName || "You",
+          profilePicture: user.profilePicture || "https://via.placeholder.com/150",
+          matchedAt: new Date(),
+        });
+  
+        // Display match popup
+         setMatches((prevMatches) => [...prevMatches, likedUser]);
+      setCurrentMatch(likedUser);
+      setShowMatchPopup(true);
       }
     } catch (error) {
       console.error("Error handling like:", error);
