@@ -1,49 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   Image,
-  SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../Firebase";
+import { useUser } from "@clerk/clerk-expo";
+import { useNavigation } from "@react-navigation/native";
 
-const Chat = ({ route }) => {
-  const { matches } = route.params;
+const ChatScreen = () => {
+  const [matches, setMatches] = useState([]);
+  const { user } = useUser();
+  const loggedInUserId = user?.id;
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const snapshot = await getDocs(
+          collection(db, `users/${loggedInUserId}/matches`)
+        );
+        const fetchedMatches = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMatches(fetchedMatches);
+      } catch (error) {
+        console.error("Error fetching matches:", error);
+      }
+    };
+
+    fetchMatches();
+  }, []);
+
+  const navigateToMessages = (match) => {
+    navigation.navigate("Messages", { match });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-        />
-
-      </View>
-
-      {/* Matches List */}
-      {matches.length > 0 ? (
+    <View style={styles.container}>
+      {matches.length === 0 ? (
+        <Text style={styles.noMatchesText}>No matches yet!</Text>
+      ) : (
         <FlatList
           data={matches}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.matchItem}>
+            <TouchableOpacity
+              style={styles.matchContainer}
+              onPress={() => navigateToMessages(item)}
+            >
               <Image
-                source={{ uri: item.profilePicture }}
-                style={styles.profileImage}
+                source={{ uri: item.profilePicture || "https://via.placeholder.com/150" }}
+                style={styles.matchImage}
               />
-              <View style={styles.textContainer}>
-                <Text style={styles.nameText}>{item.firstName}</Text>
-                <Text style={styles.messageText}>{item.lastMessage}</Text>
-              </View>
-            </View>
+              <Text style={styles.matchName}>{item.name}</Text>
+            </TouchableOpacity>
           )}
         />
-      ) : (
-        <Text style={styles.noMatchesText}>No matches yet!</Text>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -51,57 +71,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    padding: 20,
   },
-  header: {
+  noMatchesText: {
+    fontSize: 18,
+    color: "#888",
+    textAlign: "center",
+    marginTop: 50,
+  },
+  matchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 10,
+    backgroundColor: "#f9f9f9",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
-  logo: {
-    width: 120,
-    height:40,
-    marginRight: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  matchItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  profileImage: {
+  matchImage: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 15,
+    marginRight: 10,
   },
-  textContainer: {
-    flex: 1,
-  },
-  nameText: {
+  matchName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-  },
-  messageText: {
-    fontSize: 14,
-    color: "#6C6C6C",
-    marginTop: 4,
-  },
-  noMatchesText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#aaa",
+    fontWeight: "bold",
   },
 });
 
-export default Chat;
+export default ChatScreen;

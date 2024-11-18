@@ -10,11 +10,10 @@ import {
   Modal,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
-import { collection, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, getDoc, query, where } from "firebase/firestore";
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
 import { useNavigation } from "@react-navigation/native";
-
 
 const HomeScreen = () => {
   const [users, setUsers] = useState([]);
@@ -32,9 +31,17 @@ const HomeScreen = () => {
     const fetchUsers = async () => {
       try {
         setIsLoading(true);
+
+        // Fetch all swiped user IDs for the current user
+        const swipedSnapshot = await getDocs(
+          collection(db, `users/${loggedInUserId}/swipedUsers`)
+        );
+        const swipedUserIds = swipedSnapshot.docs.map((doc) => doc.id);
+
+        // Fetch all users and filter out the swiped users
         const snapshot = await getDocs(collection(db, "users"));
         const allUsers = snapshot.docs
-          .filter((doc) => doc.id !== loggedInUserId)
+          .filter((doc) => doc.id !== loggedInUserId && !swipedUserIds.includes(doc.id))
           .map((doc) => ({ id: doc.id, ...doc.data() }));
 
         setUsers(allUsers);
@@ -52,11 +59,18 @@ const HomeScreen = () => {
     const likedUser = users[cardIndex];
 
     try {
+      // Add to "likes" collection
       await setDoc(doc(db, "likes", `${loggedInUserId}_${likedUser.id}`), {
         from: loggedInUserId,
         to: likedUser.id,
       });
 
+      // Add to "swipedUsers" collection
+      await setDoc(doc(db, `users/${loggedInUserId}/swipedUsers`, likedUser.id), {
+        swipedAt: new Date(),
+      });
+
+      // Check if there's a match
       const matchDoc = await getDoc(
         doc(db, "likes", `${likedUser.id}_${loggedInUserId}`)
       );
@@ -71,8 +85,19 @@ const HomeScreen = () => {
     }
   };
 
-  const handleSwipeLeft = (cardIndex) => {
-    console.log("Disliked:", users[cardIndex]);
+  const handleSwipeLeft = async (cardIndex) => {
+    const dislikedUser = users[cardIndex];
+
+    try {
+      // Add to "swipedUsers" collection
+      await setDoc(doc(db, `users/${loggedInUserId}/swipedUsers`, dislikedUser.id), {
+        swipedAt: new Date(),
+      });
+
+      console.log("Disliked:", dislikedUser);
+    } catch (error) {
+      console.error("Error handling dislike:", error);
+    }
   };
 
   const handleSwipedAll = () => {
@@ -131,45 +156,58 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {allSwiped ? (
-        <Text style={styles.noMoreUsersText}>No more users available.</Text>
+      {users.length === 0 ? (
+        <View style={styles.noMoreUsersContainer}>
+          <Text style={styles.noMoreUsersText}>No more users to show.</Text>
+        </View>
       ) : (
+        
         <View style={styles.swiperContainer}>
-          <Swiper
-            ref={(swiper) => (swiperRef.current = swiper)}
-            cards={users}
-            renderCard={(user) => (
-              <TouchableOpacity
-              activeOpacity={1}
-              onPress={() => navigation.navigate("Model", { user })}
-              style={styles.card}
-            >
-              <Image
-                source={{ uri: user.profilePicture }}
-                style={styles.profileImage}
-              />
-              <Text style={styles.nameText}>
-                {user.firstName}, {user.age}
-              </Text>
-              <Text style={styles.bioText}>{user.introduction}</Text>
-              <Text style={styles.bioText1}>{user.occupation}</Text>
-              <Text style={styles.bioText1}>{user.languages}</Text>
-            </TouchableOpacity>
-            )}
-            onSwipedRight={handleSwipeRight}
-            onSwipedLeft={handleSwipeLeft}
-            onSwipedAll={handleSwipedAll}
-            stackSize={3}
-            cardStyle={styles.swipeCard}
-            backgroundColor="transparent"
-            cardIndex={0}
-            infinite={false}
-            verticalSwipe={false}
-          />
+         <Swiper
+  ref={(swiper) => (swiperRef.current = swiper)}
+  cards={users}
+  renderCard={(user) => {
+    // Add a null-check to ensure `user` is valid
+    if (!user) {
+      return <View style={styles.emptyCard}><Text>No more users to show.</Text></View>;
+    }
+
+    // Ensure `user.profilePicture` exists before rendering
+    return (
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => navigation.navigate("Model", { user })}
+        style={styles.card}
+      >
+        <Image
+          source={{ uri: user.profilePicture || "https://via.placeholder.com/150" }}
+          style={styles.profileImage}
+        />
+        <Text style={styles.nameText}>
+          {user.firstName || "Name Unknown"}, {user.age || "Age Unknown"}
+        </Text>
+        <Text style={styles.bioText}>{user.introduction || "No introduction provided."}</Text>
+        <Text style={styles.bioText1}>{user.occupation || "Occupation not listed."}</Text>
+        <Text style={styles.bioText1}>{user.languages || "Languages not specified."}</Text>
+      </TouchableOpacity>
+    );
+  }}
+  onSwipedRight={handleSwipeRight}
+  onSwipedLeft={handleSwipeLeft}
+  onSwipedAll={handleSwipedAll}
+  stackSize={3}
+  cardStyle={styles.swipeCard}
+  backgroundColor="transparent"
+  cardIndex={0}
+  infinite={false}
+  verticalSwipe={false}
+/>
+
         </View>
       )}
 
-      <View style={styles.buttonContainer}>
+      {users.length !== 0 && (
+        <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={handleRejectButton}
@@ -180,7 +218,7 @@ const HomeScreen = () => {
           <Text style={styles.buttonText}>Accept</Text>
         </TouchableOpacity>
       </View>
-
+ )}
       {showMatchPopup && currentMatch && (
         <Modal
           visible={showMatchPopup}
@@ -211,6 +249,9 @@ const HomeScreen = () => {
     </SafeAreaView>
   );
 };
+
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

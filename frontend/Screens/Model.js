@@ -85,7 +85,7 @@ const Model = ({ route, navigation }) => {
 
           {/* Additional Pictures Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Additional Pictures</Text>
+
             <View style={styles.imageGrid}>
               {additionalData && additionalData.additionalPictures && additionalData.additionalPictures.length > 0 ? (
                 additionalData.additionalPictures.map((imageUri, index) => (
