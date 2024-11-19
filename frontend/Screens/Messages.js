@@ -12,7 +12,7 @@ import {
   StatusBar,
   Image,
 } from "react-native";
-import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc , getDoc} from "firebase/firestore";
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +23,26 @@ const Messages = ({ route, navigation }) => {
   const loggedInUserId = user?.id;
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [matchDetails, setMatchDetails] = useState(null);
   const flatListRef = useRef(null);
+
+  useEffect(() => {
+    const fetchMatchDetails = async () => {
+      try {
+        const matchDoc = await getDoc(doc(db, "users", match.id));
+        if (matchDoc.exists()) {
+          setMatchDetails({
+            id: match.id,
+            ...matchDoc.data()
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching match details:", error);
+      }
+    };
+
+    fetchMatchDetails();
+  }, [match.id]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -31,8 +50,14 @@ const Messages = ({ route, navigation }) => {
         <TouchableOpacity
           style={styles.headerContainer}
           onPress={() => {
-            // Add navigation to user profile if needed
-            navigation.navigate("Model", { user });
+            // Navigate to Model screen with complete match details
+            navigation.navigate("Model", { 
+              user: matchDetails || {
+                id: match.id,
+                firstName: match.name,
+                profilePicture: match.profilePicture
+              }
+            });
           }}
         >
           <Image
@@ -53,7 +78,7 @@ const Messages = ({ route, navigation }) => {
       headerShadowVisible: false,
       headerTitleAlign: 'left',
     });
-  }, [navigation, match.name, match.profilePicture]);
+  }, [navigation, match.name, match.profilePicture, matchDetails]);
   
 
   useEffect(() => {
