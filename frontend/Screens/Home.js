@@ -74,14 +74,21 @@ const HomeScreen = () => {
       const matchDoc = await getDoc(
         doc(db, "likes", `${likedUser.id}_${loggedInUserId}`)
       );
+      
 
       if (matchDoc.exists()) {
+        const userDoc = await getDoc(doc(db, "users", loggedInUserId));
+        const userData = userDoc.exists() ? userDoc.data() : null;
+  
+        if (!userData || !userData.profilePicture) {
+          console.error("Profile picture not found for the logged-in user.");
+          throw new Error("Profile picture missing for logged-in user.");
+        };
         const matchData = {
           id: likedUser.id,
           name: likedUser.firstName,
-          profilePicture: likedUser.profilePicture,
+          profilePicture: likedUser.profilePicture, // Ensure likedUser has a valid profile picture
         };
-  
         // Save match data for logged-in user
         await setDoc(doc(db, `users/${loggedInUserId}/matches`, likedUser.id), {
           ...matchData,
@@ -92,7 +99,19 @@ const HomeScreen = () => {
         await setDoc(doc(db, `users/${likedUser.id}/matches`, loggedInUserId), {
           id: loggedInUserId,
           name: user?.firstName || "You",
-          profilePicture: user.profilePicture || "https://via.placeholder.com/150",
+          profilePicture: userData.profilePicture, //fix this 
+
+
+
+
+
+
+//_____________________________fix this
+
+
+
+
+
           matchedAt: new Date(),
         });
   

@@ -38,7 +38,11 @@ const ChatScreen = () => {
   }, []);
 
   const navigateToMessages = (match) => {
-    navigation.navigate("Messages", { match });
+    const chatId =
+      loggedInUserId < match.id
+        ? `${loggedInUserId}_${match.id}`
+        : `${match.id}_${loggedInUserId}`;
+    navigation.navigate("Messages", { match, chatId });
   };
 
   return (
