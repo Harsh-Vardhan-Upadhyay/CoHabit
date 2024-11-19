@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,85 +6,172 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  Image,
 } from "react-native";
-import { collection, addDoc, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, updateDoc, doc } from "firebase/firestore";
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
 
-const Messages = ({ route }) => {
+const Messages = ({ route, navigation }) => {
   const { match, chatId } = route.params;
   const { user } = useUser();
   const loggedInUserId = user?.id;
-
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const flatListRef = useRef(null);
 
-  // Fetch messages in real-time
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <TouchableOpacity
+          style={styles.headerContainer}
+          onPress={() => {
+            // Add navigation to user profile if needed
+            navigation.navigate("Model", { user });
+          }}
+        >
+          <Image
+            source={{
+              uri: match.profilePicture || "https://via.placeholder.com/150",
+            }}
+            style={styles.headerProfileImage}
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>{match.name}</Text>
+          </View>
+        </TouchableOpacity>
+      ),
+      headerStyle: {
+        backgroundColor: '#F1F1F2',
+        height: 110,
+      },
+      headerShadowVisible: false,
+      headerTitleAlign: 'left',
+    });
+  }, [navigation, match.name, match.profilePicture]);
+  
+
   useEffect(() => {
     const messagesRef = collection(db, `chats/${chatId}/messages`);
     const q = query(messagesRef, orderBy("timestamp", "asc"));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedMessages = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setMessages(fetchedMessages);
+      
+      snapshot.docs.forEach(async (doc) => {
+        if (doc.data().senderId !== loggedInUserId && !doc.data().read) {
+          await updateDoc(doc.ref, { read: true });
+        }
+      });
     });
-
-    return unsubscribe; // Cleanup subscription on unmount
+    return unsubscribe;
   }, [chatId]);
 
-  // Send a new message
   const sendMessage = async () => {
     if (newMessage.trim() === "") return;
-
+    
     const messagesRef = collection(db, `chats/${chatId}/messages`);
     await addDoc(messagesRef, {
       senderId: loggedInUserId,
       text: newMessage,
       timestamp: new Date(),
+      read: false,
     });
+    
+    setNewMessage("");
+    flatListRef.current?.scrollToEnd();
+  };
 
-    setNewMessage(""); // Clear input
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const renderMessage = ({ item, index }) => {
+    const isCurrentUser = item.senderId === loggedInUserId;
+    const showTimestamp = index === 0 || 
+      (messages[index - 1] && 
+       messages[index - 1].senderId !== item.senderId);
+
+    return (
+      <View style={[
+        styles.messageWrapper,
+        isCurrentUser ? styles.sentMessageWrapper : styles.receivedMessageWrapper
+      ]}>
+        <View style={[
+          styles.messageContainer,
+          isCurrentUser ? styles.sentMessage : styles.receivedMessage,
+        ]}>
+          <Text style={[
+            styles.messageText,
+            isCurrentUser ? styles.sentMessageText : styles.receivedMessageText
+          ]}>
+            {item.text}
+          </Text>
+        </View>
+        {showTimestamp && (
+          <Text style={styles.timestamp}>
+            {formatTime(item.timestamp)}
+          </Text>
+        )}
+      </View>
+    );
   };
 
   return (
-    <View style={styles.container}>
-      {/* Chat Header */}
-      <Text style={styles.header}>{match.name}</Text>
-
-      {/* Message List */}
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageContainer,
-              item.senderId === loggedInUserId
-                ? styles.sentMessage
-                : styles.receivedMessage,
-            ]}
-          >
-            <Text style={styles.messageText}>{item.text}</Text>
-          </View>
-        )}
-      />
-
-      {/* Message Input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newMessage}
-          onChangeText={setNewMessage}
-          placeholder="Type a message..."
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messagesList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+          onLayout={() => flatListRef.current?.scrollToEnd()}
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              value={newMessage}
+              onChangeText={setNewMessage}
+              placeholder="Message"
+              placeholderTextColor="#8e8e93"
+              multiline
+              maxHeight={100}
+
+              onSubmitEditing={sendMessage}
+            />
+            <TouchableOpacity 
+              style={styles.sendButton} 
+              onPress={sendMessage}
+              disabled={!newMessage.trim()}
+            >
+              <Ionicons 
+                name="arrow-up-circle"
+                size={32} 
+                color={newMessage.trim() ? "#007AFF" : "#C7C7CC"} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -92,55 +179,113 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    padding: 10,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start', // Center the content horizontally
+    width: '100%',
+    paddingHorizontal: 0,
+    marginLeft:-20 ,// Ensure the container spans the full width of the screen
+  },
+  headerProfileImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  headerTextContainer: {
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  messagesList: {
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  messageWrapper: {
+    marginVertical: 2,
+    maxWidth: '80%',
+  },
+  sentMessageWrapper: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  receivedMessageWrapper: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
   },
   messageContainer: {
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-    maxWidth: "70%",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 2,
   },
   sentMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#DCF8C6",
+    backgroundColor: '#007AFF',
+    marginLeft: 40,
   },
   receivedMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#ECECEC",
+    backgroundColor: '#E9E9EB',
+    marginRight: 40,
   },
   messageText: {
     fontSize: 16,
+    lineHeight: 20,
+  },
+  sentMessageText: {
+    color: '#FFFFFF',
+  },
+  receivedMessageText: {
+    color: '#000000',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+    marginBottom: 8,
   },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
     borderTopWidth: 1,
-    borderColor: "#ddd",
+    borderTopColor: '#E9E9E9',
+    padding: 8,
+    backgroundColor: '#FFF',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    height: 40,
+    fontSize: 16,
+    lineHeight: 20,
+    maxHeight: 100,
+    minHeight: 24,
+    paddingTop: 0,
+    paddingBottom: 0,
+    marginRight: 8,
   },
   sendButton: {
-    marginLeft: 10,
-    backgroundColor: "#007BFF",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-  },
-  sendButtonText: {
-    color: "#fff",
-    fontSize: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    marginBottom: -2,
   },
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "./Firebase"; // Your Firebase configuration file
+import { db } from "./Firebase";
 import Signup from "./Screens/Signup";
 import Details from "./Screens/Details";
 import ProfilePicture from "./Screens/ProfilePicture";
@@ -28,14 +28,12 @@ const StackNavigator = () => {
         setLoading(false);
         return;
       }
-
       try {
         const userDoc = await getDoc(doc(db, "users", user.id));
         if (userDoc.exists()) {
           const profileData = userDoc.data().profileCompleted || {};
           const detailsCompleted = profileData.detailsCompleted || false;
           const detailedProfileCompleted = profileData.detailedProfileCompleted || false;
-
           if (!detailsCompleted) {
             setInitialScreen("Details");
           } else if (!detailedProfileCompleted) {
@@ -53,35 +51,65 @@ const StackNavigator = () => {
         setLoading(false);
       }
     };
-
     fetchProfileStatus();
   }, [user]);
 
-  if (loading) return null; // Replace with a loading indicator
+  if (loading) return null;
 
   return (
     <>
       <SignedIn>
-  <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialScreen}>
-    <Stack.Screen name="Details" component={Details} />
-    <Stack.Screen name="MapScreen" component={MapScreen} />
-    <Stack.Screen name="Home" component={ProfilePicture} />
-    <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
-    <Stack.Screen name="HomeScreen" component={Home} />
-    <Stack.Screen name="Chat" component={Chat} />
-    <Stack.Screen name="Profile" component={Profile} />
-    <Stack.Screen name="Messages" component={Messages} />
-    <Stack.Screen
-      name="Model"
-      component={Model}
-      initialParams={{ userData: user }} // Pass user data as initial params
-      options={{
-        presentation: "modal", // Makes this screen a modal
-      }}
-    />
-  </Stack.Navigator>
-</SignedIn>
+        <Stack.Navigator 
+          initialRouteName={initialScreen}
+          screenOptions={{
+            headerShown: false, // Default to false for most screens
+            headerStyle: {
+              backgroundColor: '#fff',
+            },
+            headerTintColor: '#000',
+            headerTitleStyle: {
+              fontWeight: '600',
+            },
+          }}
+        >
+          <Stack.Screen name="Details" component={Details} />
+          <Stack.Screen name="MapScreen" component={MapScreen} />
+          <Stack.Screen name="Home" component={ProfilePicture} />
+          <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
+          <Stack.Screen name="HomeScreen" component={Home} />
+          <Stack.Screen 
+            name="Chat" 
+            component={Chat}
+            options={{
+              headerShown: false,
 
+            }}
+          />
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen 
+            name="Messages" 
+            component={Messages}
+            options={{
+              headerShown: true, // Show header for Messages screen
+              headerShadowVisible: false,
+              headerBackTitleVisible: false,
+              headerTitle: "", // Empty string because we're using a custom header title in the Messages component
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#007AFF',
+            }}
+          />
+          <Stack.Screen
+            name="Model"
+            component={Model}
+            initialParams={{ userData: user }}
+            options={{
+              presentation: "modal",
+            }}
+          />
+        </Stack.Navigator>
+      </SignedIn>
       <SignedOut>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Signup" component={Signup} />
