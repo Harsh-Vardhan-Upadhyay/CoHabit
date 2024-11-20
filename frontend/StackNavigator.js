@@ -76,7 +76,14 @@ const StackNavigator = () => {
           <Stack.Screen name="MapScreen" component={MapScreen} />
           <Stack.Screen name="Home" component={ProfilePicture} />
           <Stack.Screen name="DetailedProfile" component={DetailedProfile} />
-          <Stack.Screen name="HomeScreen" component={Home} />
+          <Stack.Screen
+  name="HomeScreen"
+  component={Home}
+  options={{
+    gestureEnabled: false, // Disable swipe gestures for navigation
+    headerShown: false,    // Ensure no header is displayed
+  }}
+/>
           <Stack.Screen 
             name="Chat" 
             component={Chat}
