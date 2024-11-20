@@ -2,66 +2,76 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  Alert,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
-  SafeAreaView,
+  TextInput,
   ActivityIndicator,
+  SafeAreaView,
+  Alert
 } from "react-native";
-import { db } from "../Firebase"; // Ensure Firebase is properly initialized
+import { StatusBar } from 'expo-status-bar';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../Firebase"; 
 import { useUser } from "@clerk/clerk-expo";
 
 const DetailedProfile = ({ navigation }) => {
-  const [livingSpaceType, setLivingSpaceType] = useState([]);
-  const [roomType, setRoomType] = useState([]);
-  const [smoking, setSmoking] = useState([]);
-  const [cleaningFrequency, setCleaningFrequency] = useState([]);
-  const [sleepSchedule, setSleepSchedule] = useState([]);
-  const [guestFrequency, setGuestFrequency] = useState([]);
-  const [noiseTolerance, setNoiseTolerance] = useState([]);
-  const [socialLevel, setSocialLevel] = useState([]);
-  const [workSchedule, setWorkSchedule] = useState([]);
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
-  const [roommatePreferences, setRoommatePreferences] = useState([]);
+  const [preferences, setPreferences] = useState({
+    livingPreferences: [],
+    roomType: [],
+    smoking: [],
+    cleaningFrequency: [],
+    sleepSchedule: [],
+    guestFrequency: [],
+    noiseTolerance: [],
+    socialLevel: [],
+    workSchedule: [],
+    budget: { min: '', max: '' },
+    roommatePreferences: [],
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const { user } = useUser(); // Get the logged-in user
+  const { user } = useUser(); 
   const userId = user?.id;
 
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
+        if (!userId) return;
+
         const userDoc = await getDoc(doc(db, "users", userId));
 
         if (userDoc.exists()) {
           const data = userDoc.data();
           
-          // Check if profile is completed, if so, navigate to HomeScreen
+          // Check if profile is completed
           if (data.profileCompleted?.detailedProfileCompleted) {
             navigation.navigate("HomeScreen");
             return;
           }
 
-          // Populate state with the existing data if available
-          setLivingSpaceType(data.livingPreferences || []);
-          setRoomType(data.roomType || []);
-          setSmoking(data.smoking || []);
-          setCleaningFrequency(data.cleaningFrequency || []);
-          setSleepSchedule(data.sleepSchedule || []);
-          setGuestFrequency(data.guestFrequency || []);
-          setNoiseTolerance(data.noiseTolerance || []);
-          setSocialLevel(data.socialLevel || []);
-          setWorkSchedule(data.workSchedule || []);
-          setBudgetMin(data.budget?.min || "");
-          setBudgetMax(data.budget?.max || "");
-          setRoommatePreferences(data.roommatePreferences || []);
+          // Map existing data to preferences state
+          setPreferences({
+            livingPreferences: data.livingPreferences || [],
+            roomType: data.roomType || [],
+            smoking: data.smoking || [],
+            cleaningFrequency: data.cleaningFrequency || [],
+            sleepSchedule: data.sleepSchedule || [],
+            guestFrequency: data.guestFrequency || [],
+            noiseTolerance: data.noiseTolerance || [],
+            socialLevel: data.socialLevel || [],
+            workSchedule: data.workSchedule || [],
+            budget: { 
+              min: data.budget?.min || '', 
+              max: data.budget?.max || '' 
+            },
+            roommatePreferences: data.roommatePreferences || [],
+          });
         }
       } catch (error) {
-        console.error("Error fetching preferences:", error);
+        console.error('Error fetching preferences:', error);
       } finally {
         setLoading(false);
       }
@@ -70,351 +80,172 @@ const DetailedProfile = ({ navigation }) => {
     fetchPreferences();
   }, [userId, navigation]);
 
-  const savePreferencesToFirebase = async () => {
-    // Check if required fields are filled
-    if (
-      !livingSpaceType.length ||
-      !roomType.length ||
-      !smoking.length ||
-      !cleaningFrequency.length ||
-      !sleepSchedule.length ||
-      !guestFrequency.length ||
-      !noiseTolerance.length ||
-      !socialLevel.length ||
-      !workSchedule.length ||
-      !budgetMin ||
-      !budgetMax ||
-      !roommatePreferences.length
-    ) {
-      Alert.alert("Incomplete Profile", "Please fill out all the preferences before saving.");
+  const handleSave = async () => {
+    // Validation checks
+    const requiredFields = [
+      'livingPreferences', 'roomType', 'smoking', 'cleaningFrequency', 
+      'sleepSchedule', 'guestFrequency', 'noiseTolerance', 
+      'socialLevel', 'workSchedule', 'roommatePreferences'
+    ];
+
+    const isValid = requiredFields.every(field => preferences[field].length > 0) 
+      && preferences.budget.min 
+      && preferences.budget.max;
+
+    if (!isValid) {
+      Alert.alert("Incomplete Profile", "Please fill out all preferences before saving.");
       return;
     }
 
+    setSaving(true);
     try {
-      const preferences = {
-        livingPreferences: livingSpaceType,
-        roomType,
-        smoking,
-        cleaningFrequency,
-        sleepSchedule,
-        guestFrequency,
-        noiseTolerance,
-        socialLevel,
-        workSchedule,
-        budget: { min: budgetMin, max: budgetMax },
-        roommatePreferences,
-        profileCompleted: true,
-      };
-
       await setDoc(
         doc(db, "users", userId),
-        { profileCompleted: { detailedProfileCompleted: true }, ...preferences },
+        { 
+          ...preferences, 
+          profileCompleted: { detailedProfileCompleted: true } 
+        },
         { merge: true }
       );
-
-      Alert.alert("Success", "Preferences saved successfully!");
-      navigation.navigate("HomeScreen");
+      navigation.navigate('HomeScreen');
     } catch (error) {
-      console.error("Error saving preferences:", error);
+      console.error('Error saving preferences:', error);
       Alert.alert("Error", "There was an issue saving your preferences.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const toggleSelection = (selection, setSelection) => {
-    setSelection((prevState) =>
-      prevState.includes(selection)
-        ? prevState.filter((item) => item !== selection)
-        : [...prevState, selection]
-    );
+  const toggleSelection = (category, item) => {
+    setPreferences(prev => ({
+      ...prev,
+      [category]: prev[category].includes(item)
+        ? prev[category].filter(i => i !== item)
+        : [...prev[category], item],
+    }));
   };
+
+  const renderOptions = (category, options) => (
+    <View style={styles.optionsContainer}>
+      {options.map(option => (
+        <TouchableOpacity
+          key={option}
+          style={[
+            styles.option,
+            preferences[category].includes(option) && styles.selectedOption,
+          ]}
+          onPress={() => toggleSelection(category, option)}
+        >
+          <Text
+            style={[
+              styles.optionText,
+              preferences[category].includes(option) && styles.selectedOptionText,
+            ]}
+          >
+            {option}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>Roommate Matchmaking Preferences</Text>
+      <StatusBar style="auto" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Tell Us About You</Text>
+        
+        <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Living Preferences</Text>
+            <Text style={styles.label}>Living Space Type</Text>
+            {renderOptions('livingPreferences', ['Apartment', 'House', 'Condo', 'Shared Room', 'Other'])}
+            
+            <Text style={styles.label}>Room Type</Text>
+            {renderOptions('roomType', ['Single', 'Double', 'Master Bedroom', 'Shared'])}
+            
+            <Text style={styles.label}>Smoking</Text>
+            {renderOptions('smoking', ['Yes', 'No', 'Occasionally'])}
+          </View>
+        </Animated.View>
 
-        {/* Living Preferences */}
-        <Text style={styles.subtitle}>Living Preferences</Text>
+        <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Lifestyle & Habits</Text>
+            <Text style={styles.label}>Cleaning Frequency</Text>
+            {renderOptions('cleaningFrequency', ['Daily', 'Weekly', 'Monthly'])}
+            
+            <Text style={styles.label}>Sleep Schedule</Text>
+            {renderOptions('sleepSchedule', ['Night Owl', 'Early Riser', 'Flexible'])}
+            
+            <Text style={styles.label}>Guest Frequency</Text>
+            {renderOptions('guestFrequency', ['Occasionally', 'Frequently', 'Never'])}
+            
+            <Text style={styles.label}>Noise Tolerance</Text>
+            {renderOptions('noiseTolerance', ['High', 'Medium', 'Low'])}
+            
+            <Text style={styles.label}>Social Level</Text>
+            {renderOptions('socialLevel', ['Very Social', 'Somewhat Social', 'Not Social'])}
+            
+            <Text style={styles.label}>Work Schedule</Text>
+            {renderOptions('workSchedule', ['Remote', 'On-Site', 'Hybrid'])}
+          </View>
+        </Animated.View>
 
-        <Text>Living Space Type</Text>
-        <View style={styles.optionsContainer}>
-          {["Apartment", "House", "Condo", "Shared Room", "Other"].map(
-            (space) => (
-              <TouchableOpacity
-                key={space}
-                style={[
-                  styles.option,
-                  livingSpaceType.includes(space) && styles.selectedOption,
-                ]}
-                onPress={() => toggleSelection(space, setLivingSpaceType)}
-              >
-                <Text
-                  style={
-                    livingSpaceType.includes(space)
-                      ? styles.selectedText
-                      : styles.unselectedText
-                  }
-                >
-                  {space}
-                </Text>
-              </TouchableOpacity>
-            )
-          )}
-        </View>
+        <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Budget</Text>
+            <View style={styles.budgetContainer}>
+              <View style={styles.budgetInput}>
+                <Text style={styles.label}>Minimum</Text>
+                <TextInput
+                  style={styles.input}
+                  value={preferences.budget.min}
+                  onChangeText={(value) => setPreferences(prev => ({ ...prev, budget: { ...prev.budget, min: value } }))}
+                  placeholder="Min Budget"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.budgetInput}>
+                <Text style={styles.label}>Maximum</Text>
+                <TextInput
+                  style={styles.input}
+                  value={preferences.budget.max}
+                  onChangeText={(value) => setPreferences(prev => ({ ...prev, budget: { ...prev.budget, max: value } }))}
+                  placeholder="Max Budget"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </View>
+        </Animated.View>
 
-        <Text>Room Type</Text>
-        <View style={styles.optionsContainer}>
-          {["Single", "Double", "Master Bedroom", "Shared"].map((room) => (
-            <TouchableOpacity
-              key={room}
-              style={[
-                styles.option,
-                roomType.includes(room) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(room, setRoomType)}
-            >
-              <Text
-                style={
-                  roomType.includes(room)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {room}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>Smoking</Text>
-        <View style={styles.optionsContainer}>
-          {["Yes", "No", "Occasionally"].map((smoke) => (
-            <TouchableOpacity
-              key={smoke}
-              style={[
-                styles.option,
-                smoking.includes(smoke) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(smoke, setSmoking)}
-            >
-              <Text
-                style={
-                  smoking.includes(smoke)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {smoke}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Lifestyle & Habits */}
-        <Text style={styles.subtitle}>Lifestyle & Habits</Text>
-
-        <Text>Cleaning Frequency</Text>
-        <View style={styles.optionsContainer}>
-          {["Daily", "Weekly", "Monthly"].map((cleaning) => (
-            <TouchableOpacity
-              key={cleaning}
-              style={[
-                styles.option,
-                cleaningFrequency.includes(cleaning) &&
-                  styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(cleaning, setCleaningFrequency)}
-            >
-              <Text
-                style={
-                  cleaningFrequency.includes(cleaning)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {cleaning}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>Sleep Schedule</Text>
-        <View style={styles.optionsContainer}>
-          {["Night Owl", "Early Riser", "Flexible"].map((sleep) => (
-            <TouchableOpacity
-              key={sleep}
-              style={[
-                styles.option,
-                sleepSchedule.includes(sleep) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(sleep, setSleepSchedule)}
-            >
-              <Text
-                style={
-                  sleepSchedule.includes(sleep)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {sleep}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>Guest Frequency</Text>
-        <View style={styles.optionsContainer}>
-          {["Occasionally", "Frequently", "Never"].map((guest) => (
-            <TouchableOpacity
-              key={guest}
-              style={[
-                styles.option,
-                guestFrequency.includes(guest) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(guest, setGuestFrequency)}
-            >
-              <Text
-                style={
-                  guestFrequency.includes(guest)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {guest}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>Noise Tolerance</Text>
-        <View style={styles.optionsContainer}>
-          {["High", "Medium", "Low"].map((noise) => (
-            <TouchableOpacity
-              key={noise}
-              style={[
-                styles.option,
-                noiseTolerance.includes(noise) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(noise, setNoiseTolerance)}
-            >
-              <Text
-                style={
-                  noiseTolerance.includes(noise)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {noise}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>How Social are you?</Text>
-        <View style={styles.optionsContainer}>
-          {["Very Social", "Somewhat Social", "Not Social"].map((social) => (
-            <TouchableOpacity
-              key={social}
-              style={[
-                styles.option,
-                socialLevel.includes(social) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(social, setSocialLevel)}
-            >
-              <Text
-                style={
-                  socialLevel.includes(social)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {social}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text>Work Schedule</Text>
-        <View style={styles.optionsContainer}>
-          {["Remote", "On-Site", "Hybrid"].map((work) => (
-            <TouchableOpacity
-              key={work}
-              style={[
-                styles.option,
-                workSchedule.includes(work) && styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(work, setWorkSchedule)}
-            >
-              <Text
-                style={
-                  workSchedule.includes(work)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {work}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Budget */}
-        <Text style={styles.subtitle}>Budget</Text>
-        <TextInput
-          placeholder="Minimum Budget"
-          value={budgetMin}
-          onChangeText={setBudgetMin}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Maximum Budget"
-          value={budgetMax}
-          onChangeText={setBudgetMax}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-
-        {/* Roommate Preferences */}
-        <Text style={styles.subtitle}>Roommate Preferences</Text>
-        <Text>Roommate Preferences (Choose all that apply)</Text>
-        <View style={styles.optionsContainer}>
-          {["Male", "Female", "Non-Binary", "Flexible"].map((preference) => (
-            <TouchableOpacity
-              key={preference}
-              style={[
-                styles.option,
-                roommatePreferences.includes(preference) &&
-                  styles.selectedOption,
-              ]}
-              onPress={() => toggleSelection(preference, setRoommatePreferences)}
-            >
-              <Text
-                style={
-                  roommatePreferences.includes(preference)
-                    ? styles.selectedText
-                    : styles.unselectedText
-                }
-              >
-                {preference}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Animated.View entering={FadeInUp.duration(500).delay(400)}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Roommate Preferences</Text>
+            <Text style={styles.label}>Preferred Roommate</Text>
+            {renderOptions('roommatePreferences', ['Male', 'Female', 'Non-Binary', 'Flexible'])}
+          </View>
+        </Animated.View>
 
         <TouchableOpacity
           style={styles.saveButton}
-          onPress={savePreferencesToFirebase}
+          onPress={handleSave}
+          disabled={saving}
         >
-          <Text style={styles.saveButtonText}>Save Preferences</Text>
+          {saving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Preferences</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -424,60 +255,94 @@ const DetailedProfile = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
-    paddingHorizontal: 20,
+    backgroundColor: '#F0F0F0',
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
-    textAlign: "center",
   },
-  subtitle: {
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 12,
   },
   optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
   },
   option: {
-    backgroundColor: "#d9d9d9",
-    borderRadius: 5,
-    padding: 10,
-    margin: 5,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
   },
   selectedOption: {
-    backgroundColor: "#007bff",
+    backgroundColor: '#3A3A3A',
   },
-  unselectedText: {
-    color: "#333",
+  optionText: {
+    fontSize: 14,
+    color: '#333333',
   },
-  selectedText: {
-    color: "#fff",
+  selectedOptionText: {
+    color: '#FFFFFF',
+  },
+  budgetContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetInput: {
+    flex: 1,
+    marginRight: 8,
   },
   input: {
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
   },
   saveButton: {
-    backgroundColor: "#007bff",
-    padding: 15,
-    borderRadius: 5,
-    alignItems: "center",
-    marginVertical: 20,
+    backgroundColor: '#3A3A3A',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    width: '100%', // Adjust width to fit well on screen
+    height: 50,
+    marginTop: 20,
+    marginBottom: 0,
   },
   saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: "600",
   },
 });
 

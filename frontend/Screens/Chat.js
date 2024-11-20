@@ -7,8 +7,9 @@ import {
   Image,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
 } from "react-native";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
 import { useNavigation } from "@react-navigation/native";
@@ -58,6 +59,7 @@ const ChatScreen = () => {
             );
           });
 
+          
           setMessageListeners((prevListeners) => ({
             ...prevListeners,
             [chatId]: unsubscribeMessages,
@@ -81,12 +83,54 @@ const ChatScreen = () => {
         : `${match.id}_${loggedInUserId}`;
     navigation.navigate("Messages", { match, chatId  });
   };
+  const handleUnmatch = async (match) => {
+    try {
+      // Confirmation alert before unmatching
+      Alert.alert(
+        "Unmatch",
+        `Are you sure you want to unmatch with ${match.name}?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Unmatch",
+            style: "destructive",
+            onPress: async () => {
+              // Reference to the match document in the logged-in user's matches collection
+              const matchDocRef = doc(db, `users/${loggedInUserId}/matches/${match.id}`);
+              
+              // Delete the match document
+              await deleteDoc(matchDocRef);
+
+              // Optional: You might want to delete the reciprocal match in the other user's matches
+              const reciprocalMatchDocRef = doc(db, `users/${match.id}/matches/${loggedInUserId}`);
+              await deleteDoc(reciprocalMatchDocRef);
+
+              // Optional: Delete the chat collection (if you want to completely remove chat history)
+              const chatId =
+                loggedInUserId < match.id
+                  ? `${loggedInUserId}_${match.id}`
+                  : `${match.id}_${loggedInUserId}`;
+              
+              // Note: In a real app, you might want to use a cloud function to handle this deletion
+              // to avoid client-side deletion of all subcollection documents
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Error unmatching:", error);
+      Alert.alert("Error", "Could not unmatch at this time.");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={require("../assets/images/logo.png")} // Make sure to add your logo image
+          source={require("../assets/images/logo.png")}
           style={styles.logoImage}
           resizeMode="contain"
         />
@@ -101,6 +145,7 @@ const ChatScreen = () => {
             <TouchableOpacity
               style={styles.matchContainer}
               onPress={() => navigateToMessages(item)}
+              onLongPress={() => handleUnmatch(item)} // Add long press handler
             >
               <Image
                 source={{ uri: item.profilePicture || "https://via.placeholder.com/150" }}
@@ -136,8 +181,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
 
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+   
     alignItems: "start",
     justifyContent: "center",
   },
@@ -155,8 +199,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
   },
   matchImage: {
     width: 50,
