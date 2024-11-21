@@ -32,13 +32,14 @@
 ---
 
 ## Screens and Components
-![HomeScreen](https://github.com/user-attachments/assets/dbe41e5f-f65a-4370-affe-b899bb76f9a3)
-![ProfileScreen](https://github.com/user-attachments/assets/cfb570a0-b701-4a85-b17e-10bd07f27ad5)
-![SignUp Screen](https://github.com/user-attachments/assets/e0de3d08-0c1b-44c2-91cc-b82e874d4cd2)
-![Map](https://github.com/user-attachments/assets/50d52689-d003-4af5-9a14-67644d15887e)
-![Model](https://github.com/user-attachments/assets/0be5b735-2438-49c6-a4c9-3fd9ac79ac88)
-![Chat](https://github.com/user-attachments/assets/e2e8a831-c987-4860-aa0a-85faf07cb50d)
-
+<div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+  <img src="https://github.com/user-attachments/assets/dbe41e5f-f65a-4370-affe-b899bb76f9a3" width="150" />
+  <img src="https://github.com/user-attachments/assets/cfb570a0-b701-4a85-b17e-10bd07f27ad5" width="150" />
+  <img src="https://github.com/user-attachments/assets/e0de3d08-0c1b-44c2-91cc-b82e874d4cd2" width="150" />
+  <img src="https://github.com/user-attachments/assets/50d52689-d003-4af5-9a14-67644d15887e" width="150" />
+  <img src="https://github.com/user-attachments/assets/0be5b735-2438-49c6-a4c9-3fd9ac79ac88" width="150" />
+  <img src="https://github.com/user-attachments/assets/e2e8a831-c987-4860-aa0a-85faf07cb50d" width="150" />
+</div>
 
 
 ### 1. **HomeScreen**
