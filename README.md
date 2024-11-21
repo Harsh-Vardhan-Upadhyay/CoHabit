@@ -1,7 +1,7 @@
-<h1 align="center">coHabit</h1>
+<h1 align="center">CoHabit</h1>
 <img width="100%" alt="image" src="https://github.com/user-attachments/assets/c95a5da1-5b7f-4165-aaea-a856add5f69f">
 
-**coHabit** is a modern, mobile-first application designed to help users find the perfect roommate. Think of it as Tinder, but for matching with suitable roommates instead of romantic partners. With its swipeable card interface, chat functionality, and map-based location preferences, coHabit ensures you connect with people who align with your living preferences.
+**CoHabit** is a modern, mobile-first application designed to help users find the perfect roommate. Think of it as Tinder, but for matching with suitable roommates instead of romantic partners. With its swipeable card interface, chat functionality, and map-based location preferences, coHabit ensures you connect with people who align with your living preferences.
 
 ---
 
@@ -72,7 +72,7 @@
 
 ### Backend
 - **Firebase Firestore** for real-time database and chat management.
-- **Firebase Authentication** for user login and profile handling.
+- **Clerk Authentication** for user login and profile handling.
 
 ### Notifications
 - **Expo Notifications** for push notifications.
@@ -83,4 +83,5 @@
 
 - **React Native** and **Expo** for simplifying cross-platform development.
 - **Firebase** for backend services.
+- **Clerk** for authentication services.
 - **react-native-deck-swiper** for the intuitive swipeable interface.
