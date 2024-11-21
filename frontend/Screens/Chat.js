@@ -13,6 +13,16 @@ import { collection, query, onSnapshot, orderBy, deleteDoc, doc } from "firebase
 import { db } from "../Firebase";
 import { useUser } from "@clerk/clerk-expo";
 import { useNavigation } from "@react-navigation/native";
+import * as Notifications from 'expo-notifications';
+
+// Configure notification handling
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 const ChatScreen = () => {
   const [matches, setMatches] = useState([]);
@@ -20,6 +30,32 @@ const ChatScreen = () => {
   const loggedInUserId = user?.id;
   const navigation = useNavigation();
   const [messageListeners, setMessageListeners] = useState({});
+
+  // Request notification permissions on component mount
+  useEffect(() => {
+    const requestNotificationPermissions = async () => {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+
+        if (finalStatus !== 'granted') {
+          Alert.alert('Notification Permissions', 'Please enable notifications in your device settings.');
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error('Error requesting notification permissions:', error);
+        return false;
+      }
+    };
+
+    requestNotificationPermissions();
+  }, []);
 
   useEffect(() => {
     const matchesRef = collection(db, `users/${loggedInUserId}/matches`);
@@ -39,12 +75,21 @@ const ChatScreen = () => {
           const messagesRef = collection(db, `chats/${chatId}/messages`);
           const messagesQuery = query(messagesRef, orderBy("timestamp", "desc"));
 
-          const unsubscribeMessages = onSnapshot(messagesQuery, (msgSnapshot) => {
+          const unsubscribeMessages = onSnapshot(messagesQuery, async (msgSnapshot) => {
             const lastMessage = msgSnapshot.docs[0]?.data();
             const unreadMessages = msgSnapshot.docs.filter(
               (doc) =>
                 !doc.data().read && doc.data().senderId !== loggedInUserId
             ).length;
+
+            // Send local notification for new unread messages
+            if (unreadMessages > 0 && lastMessage?.senderId !== loggedInUserId) {
+              await schedulePushNotification(
+                match.name, 
+                lastMessage?.text || "New message", 
+                unreadMessages
+              );
+            }
 
             setMatches((prevMatches) =>
               prevMatches.map((m) =>
@@ -59,7 +104,6 @@ const ChatScreen = () => {
             );
           });
 
-          
           setMessageListeners((prevListeners) => ({
             ...prevListeners,
             [chatId]: unsubscribeMessages,
@@ -76,6 +120,23 @@ const ChatScreen = () => {
     };
   }, [loggedInUserId]);
 
+  // Function to schedule push notification
+  const schedulePushNotification = async (senderName, messageText, unreadCount) => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `New message from ${senderName}`,
+          body: messageText,
+          data: { unreadCount },
+          sound: 'default',
+        },
+        trigger: null, // Send immediately
+      });
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+    }
+  };
+
   const navigateToMessages = (match) => {
     const chatId =
       loggedInUserId < match.id
@@ -83,9 +144,9 @@ const ChatScreen = () => {
         : `${match.id}_${loggedInUserId}`;
     navigation.navigate("Messages", { match, chatId  });
   };
+
   const handleUnmatch = async (match) => {
     try {
-      // Confirmation alert before unmatching
       Alert.alert(
         "Unmatch",
         `Are you sure you want to unmatch with ${match.name}?`,
@@ -98,24 +159,12 @@ const ChatScreen = () => {
             text: "Unmatch",
             style: "destructive",
             onPress: async () => {
-              // Reference to the match document in the logged-in user's matches collection
               const matchDocRef = doc(db, `users/${loggedInUserId}/matches/${match.id}`);
               
-              // Delete the match document
               await deleteDoc(matchDocRef);
 
-              // Optional: You might want to delete the reciprocal match in the other user's matches
               const reciprocalMatchDocRef = doc(db, `users/${match.id}/matches/${loggedInUserId}`);
               await deleteDoc(reciprocalMatchDocRef);
-
-              // Optional: Delete the chat collection (if you want to completely remove chat history)
-              const chatId =
-                loggedInUserId < match.id
-                  ? `${loggedInUserId}_${match.id}`
-                  : `${match.id}_${loggedInUserId}`;
-              
-              // Note: In a real app, you might want to use a cloud function to handle this deletion
-              // to avoid client-side deletion of all subcollection documents
             }
           }
         ]
@@ -125,7 +174,6 @@ const ChatScreen = () => {
       Alert.alert("Error", "Could not unmatch at this time.");
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
