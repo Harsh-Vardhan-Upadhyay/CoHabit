@@ -441,57 +441,7 @@ const Profile = () => {
   {renderPreferenceList('Work Schedule', 'workSchedule', preferences.workSchedule)}
 </View>
 
-         {/* Preferences Section */}
-         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Living Preferences</Text>
-          {renderPreferenceList('Living Space', 'livingPreferences', preferences.livingPreferences)}
-          {renderPreferenceList('Room Type', 'roomType', preferences.roomType)}
-          {renderPreferenceList('Smoking', 'smoking', preferences.smoking)}
-          
-          <View style={styles.budgetSection}>
-            <Text style={styles.preferenceTitle}>Budget Range</Text>
-            {editing ? (
-              <View style={styles.budgetInputContainer}>
-                <TextInput
-                  style={styles.budgetInput}
-                  value={preferences.budget.min}
-                  onChangeText={(text) => setPreferences(prev => ({
-                    ...prev,
-                    budget: { ...prev.budget, min: text }
-                  }))}
-                  placeholder="Min"
-                  keyboardType="numeric"
-                />
-                <Text style={styles.budgetDivider}>-</Text>
-                <TextInput
-                  style={styles.budgetInput}
-                  value={preferences.budget.max}
-                  onChangeText={(text) => setPreferences(prev => ({
-                    ...prev,
-                    budget: { ...prev.budget, max: text }
-                  }))}
-                  placeholder="Max"
-                  keyboardType="numeric"
-                />
-              </View>
-            ) : (
-              <Text style={styles.budgetText}>
-                ${preferences.budget.min} - ${preferences.budget.max}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Lifestyle Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Lifestyle</Text>
-          {renderPreferenceList('Cleaning Frequency', 'cleaningFrequency', preferences.cleaningFrequency)}
-          {renderPreferenceList('Sleep Schedule', 'sleepSchedule', preferences.sleepSchedule)}
-          {renderPreferenceList('Guest Frequency', 'guestFrequency', preferences.guestFrequency)}
-          {renderPreferenceList('Noise Tolerance', 'noiseTolerance', preferences.noiseTolerance)}
-          {renderPreferenceList('Social Level', 'socialLevel', preferences.socialLevel)}
-          {renderPreferenceList('Work Schedule', 'workSchedule', preferences.workSchedule)}
-        </View>
+        
       </ScrollView>
 
       {renderPreferencesModal()}

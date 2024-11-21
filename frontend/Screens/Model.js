@@ -69,6 +69,7 @@ const Model = ({ route, navigation }) => {
           <Text style={styles.occupationText}>{user.occupation}</Text>
         </View>
 
+        
         {/* Additional Info Sections */}
         <View style={styles.detailsContainer}>
           {/* About Section */}
@@ -77,12 +78,21 @@ const Model = ({ route, navigation }) => {
             <Text style={styles.sectionText}>{user.introduction}</Text>
           </View>
 
+          {/* {user Preferences} */}
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>User's Preferences</Text>
+            <Text style={styles.sectionText}>{user.livingPreferences}</Text>
+            <Text style={styles.sectionText}>{user.roomType}</Text>
+            <Text style={styles.sectionText}>{user.sleepSchedule}</Text>
+            <Text style={styles.sectionText}>{user.socialLevel}</Text>
+          </View>
+
           {/* Languages Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Languages</Text>
             <Text style={styles.sectionText}>{user.languages}</Text>
           </View>
-
+          
           {/* Additional Pictures Section */}
           <View style={styles.section}>
 
