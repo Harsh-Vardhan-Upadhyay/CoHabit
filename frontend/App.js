@@ -10,7 +10,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-     <ClerkProvider publishableKey={"pk_test_bGVnYWwtcG9ycG9pc2UtMC5jbGVyay5hY2NvdW50cy5kZXYk"}>
+     {/* <ClerkProvider publishableKey={"add your clerk api key"}> */}
      
        <StackNavigator />
       </ClerkProvider>
