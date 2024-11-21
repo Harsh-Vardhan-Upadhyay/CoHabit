@@ -1,4 +1,4 @@
-<<p align="center">
+<p align="center">
   <h1>coHabit</h1>
 </p>
 <img width="100%" alt="image" src="https://github.com/user-attachments/assets/c95a5da1-5b7f-4165-aaea-a856add5f69f">
