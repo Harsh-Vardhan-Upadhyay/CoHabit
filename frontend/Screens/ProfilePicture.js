@@ -1,18 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../Firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useUser } from "@clerk/clerk-expo";
 
 const ProfilePictureScreen = ({ navigation }) => {
-  const [profileImage, setProfileImage] = useState(null); // Store profile image
-  const [additionalImages, setAdditionalImages] = useState([]); // Store up to 3 additional images
-  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [profileImage, setProfileImage] = useState(null);
+  const [additionalImages, setAdditionalImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
 
-  // Function to pick an image from the gallery
+  // Check for existing profile data on component mount
+  useEffect(() => {
+    const checkExistingProfileData = async () => {
+      try {
+        const userDocRef = doc(db, "users", user.id);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.profilePicture && userData.additionalPictures && userData.additionalPictures.length > 0) {
+            // If profile picture and additional pictures exist, navigate to next screen
+            navigation.navigate("DetailedProfile");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking existing profile data:", error);
+      }
+    };
+
+    checkExistingProfileData();
+  }, [user, navigation]);
+
+  // Rest of the existing code remains the same as in the previous implementation
   const pickImage = async (type) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -29,10 +51,10 @@ const ProfilePictureScreen = ({ navigation }) => {
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
       if (type === "profile") {
-        setProfileImage(imageUri); // Set profile picture
+        setProfileImage(imageUri);
       } else {
         if (additionalImages.length < 3) {
-          setAdditionalImages([...additionalImages, imageUri]); // Add to additional images
+          setAdditionalImages([...additionalImages, imageUri]);
         } else {
           Alert.alert("Limit reached", "You can upload a maximum of 3 additional images.");
         }
@@ -40,7 +62,6 @@ const ProfilePictureScreen = ({ navigation }) => {
     }
   };
 
-  // Function to upload an image to Firebase Storage
   const uploadImageToFirebase = async (uri, name) => {
     try {
       const response = await fetch(uri);
@@ -57,26 +78,22 @@ const ProfilePictureScreen = ({ navigation }) => {
     }
   };
 
-  // Function to save profile data
   const saveProfileData = async () => {
     if (!profileImage || additionalImages.length === 0) {
       Alert.alert("Incomplete", "Please add a profile picture and at least one additional picture.");
       return;
     }
 
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
     try {
-      // Upload profile image
       const profilePicURL = await uploadImageToFirebase(profileImage, `profile_${user.id}.jpg`);
 
-      // Upload additional images
       const additionalPicsURLs = await Promise.all(
         additionalImages.map((imageUri, index) =>
           uploadImageToFirebase(imageUri, `additional_${user.id}_${index + 1}.jpg`)
         )
       );
 
-      // Save data to Firestore
       await setDoc(
         doc(db, "users", user.id),
         {
@@ -87,24 +104,21 @@ const ProfilePictureScreen = ({ navigation }) => {
       );
 
       Alert.alert("Success", "Profile updated successfully!");
-      
-      // Navigate to the DetailedProfile screen
       navigation.navigate("DetailedProfile");
     } catch (error) {
       console.error("Error in saveProfileData:", error);
       Alert.alert("Error", "There was an issue saving your profile data.");
     } finally {
-      setIsLoading(false); // Stop loading
+      setIsLoading(false);
     }
   };
 
+  // Render method remains the same as in the previous implementation
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Pick Your Photos and Videos</Text>
 
-      {/* Grid for Images */}
       <View style={styles.imageGrid}>
-        {/* Profile Picture Slot */}
         <TouchableOpacity
           style={[styles.imageSlot, !profileImage && styles.imageSlotEmpty]}
           onPress={() => pickImage("profile")}
@@ -116,7 +130,6 @@ const ProfilePictureScreen = ({ navigation }) => {
           )}
         </TouchableOpacity>
 
-        {/* Additional Pictures Slots */}
         {additionalImages.concat([null, null, null]).slice(0, 3).map((imageUri, index) => (
           <TouchableOpacity
             key={index}
@@ -132,7 +145,6 @@ const ProfilePictureScreen = ({ navigation }) => {
         ))}
       </View>
 
-      {/* Proceed Button */}
       {isLoading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -143,6 +155,8 @@ const ProfilePictureScreen = ({ navigation }) => {
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {

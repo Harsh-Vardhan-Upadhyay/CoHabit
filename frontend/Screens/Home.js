@@ -252,10 +252,10 @@ const HomeScreen = () => {
           style={styles.rejectButton}
           onPress={handleRejectButton}
         >
-          <Text style={styles.buttonText}>Reject</Text>
+          <Text style={styles.buttonText}>Dislike</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.likeButton} onPress={handleLikeButton}>
-          <Text style={styles.buttonText}>Accept</Text>
+          <Text style={styles.buttonText}>Like</Text>
         </TouchableOpacity>
       </View>
  )}

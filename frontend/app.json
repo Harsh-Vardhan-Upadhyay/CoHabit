@@ -1,22 +1,27 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "CoHabit",
     "slug": "frontend",
     "sdkVersion": "52.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "newArchEnabled": true,
     "permissions": [
       "location"
     ],
     "version": "1.0.0",
-    "scheme": ["CoHabit"],
+    "scheme": [
+      "CoHabit"
+    ],
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "/Users/harshvardhanupadhyay/CoHabit/frontend/assets/images/Icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "/Users/harshvardhanupadhyay/CoHabit/frontend/assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -28,6 +33,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3fed7a7d-e77b-4530-b307-6bd9f5c52a69"
+      }
     }
   }
 }
