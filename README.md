@@ -1,5 +1,5 @@
 # coHabit
-<img width="637" alt="image" src="https://github.com/user-attachments/assets/c95a5da1-5b7f-4165-aaea-a856add5f69f">
+<img width="100%" alt="image" src="https://github.com/user-attachments/assets/c95a5da1-5b7f-4165-aaea-a856add5f69f">
 
 **coHabit** is a modern, mobile-first application designed to help users find the perfect roommate. Think of it as Tinder, but for matching with suitable roommates instead of romantic partners. With its swipeable card interface, chat functionality, and map-based location preferences, coHabit ensures you connect with people who align with your living preferences.
 
