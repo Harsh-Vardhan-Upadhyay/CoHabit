@@ -1,4 +1,5 @@
 # coHabit
+<img width="608" alt="Screenshot 2024-11-21 at 8 50 20 PM" src="https://github.com/user-attachments/assets/da42a76b-dfe8-4ec3-bff7-01dfb4a318de">
 
 **coHabit** is a modern, mobile-first application designed to help users find the perfect roommate. Think of it as Tinder, but for matching with suitable roommates instead of romantic partners. With its swipeable card interface, chat functionality, and map-based location preferences, coHabit ensures you connect with people who align with your living preferences.
 
@@ -35,6 +36,7 @@
 ### 1. **HomeScreen**
 - Swipeable card interface using `react-native-deck-swiper`.
 - Displays user profile details like profile picture, bio, and occupation.
+![HomeScreen](https://github.com/user-attachments/assets/dbe41e5f-f65a-4370-affe-b899bb76f9a3)
 
 ### 2. **Details Screen**
 - A multi-step form for user profile completion.
@@ -69,4 +71,8 @@
 
 ---
 
+## 🙏 Acknowledgments
 
+- **React Native** and **Expo** for simplifying cross-platform development.
+- **Firebase** for backend services.
+- **react-native-deck-swiper** for the intuitive swipeable interface.
