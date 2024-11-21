@@ -69,10 +69,4 @@
 
 ---
 
-## Installation and Setup
 
-### Prerequisites
-- Ensure you have Node.js and npm installed.
-- Install Expo CLI:  
-  ```bash
-  npm install -g expo-cli
