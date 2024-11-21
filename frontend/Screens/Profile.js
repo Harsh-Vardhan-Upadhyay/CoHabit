@@ -16,6 +16,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { db, storage } from '../Firebase';
+import { Modal } from 'react-native';
 
 const Profile = () => {
   const { user } = useUser();
@@ -23,6 +24,8 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [additionalImages, setAdditionalImages] = useState([]);
+  const [isPreferencesModalVisible, setPreferencesModalVisible] = useState(false);
+  const [selectedPreferenceCategory, setSelectedPreferenceCategory] = useState(null);
   
   // Personal Details
   const [userData, setUserData] = useState({
@@ -50,6 +53,70 @@ const Profile = () => {
     budget: { min: '', max: '' },
     roommatePreferences: []
   });
+  const preferenceOptions = {
+    livingPreferences: ['Apartment', 'House', 'Condo', 'Shared Room', 'Other'],
+    roomType: ['Single', 'Double', 'Master Bedroom', 'Shared'],
+    smoking: ['Yes', 'No', 'Occasionally'],
+    cleaningFrequency: ['Daily', 'Weekly', 'Monthly'],
+    sleepSchedule: ['Night Owl', 'Early Riser', 'Flexible'],
+    guestFrequency: ['Occasionally', 'Frequently', 'Never'],
+    noiseTolerance: ['High', 'Medium', 'Low'],
+    socialLevel: ['Very Social', 'Somewhat Social', 'Not Social'],
+    workSchedule: ['Remote', 'On-Site', 'Hybrid'],
+    roommatePreferences: ['Male', 'Female', 'Non-Binary', 'Flexible']
+  }; const togglePreferenceSelection = (category, item) => {
+    setPreferences(prev => ({
+      ...prev,
+      [category]: prev[category].includes(item)
+        ? prev[category].filter(i => i !== item)
+        : [...prev[category], item]
+    }));
+  };
+
+  // Render preference selection modal
+  const renderPreferencesModal = () => (
+    <Modal
+      visible={isPreferencesModalVisible}
+      transparent={true}
+      animationType="slide"
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>
+            Select {selectedPreferenceCategory}
+          </Text>
+          <View style={styles.optionsContainer}>
+            {selectedPreferenceCategory && preferenceOptions[selectedPreferenceCategory].map(option => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.option,
+                  preferences[selectedPreferenceCategory]?.includes(option) && styles.selectedOption
+                ]}
+                onPress={() => togglePreferenceSelection(selectedPreferenceCategory, option)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    preferences[selectedPreferenceCategory]?.includes(option) && styles.selectedOptionText
+                  ]}
+                >
+                  {option}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setPreferencesModalVisible(false)}
+          >
+            <Text style={styles.modalCloseButtonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
 
   useEffect(() => {
     fetchUserData();
@@ -240,9 +307,21 @@ const Profile = () => {
     </View>
   );
 
-  const renderPreferenceList = (title, items) => (
+  const renderPreferenceList = (title, category, items) => (
     <View style={styles.preferenceSection}>
-      <Text style={styles.preferenceTitle}>{title}</Text>
+      <View style={styles.preferenceHeaderContainer}>
+        <Text style={styles.preferenceTitle}>{title}</Text>
+        {editing && (
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedPreferenceCategory(category);
+              setPreferencesModalVisible(true);
+            }}
+          >
+            <Text style={styles.editPreferencesText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={styles.preferenceList}>
         {items.map((item, index) => (
           <Text key={index} style={styles.preferenceItem}>
@@ -337,10 +416,11 @@ const Profile = () => {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Living Preferences</Text>
-          {renderPreferenceList('Living Space', preferences.livingPreferences)}
-          {renderPreferenceList('Room Type', preferences.roomType)}
-          {renderPreferenceList('Smoking', preferences.smoking)}
+  <Text style={styles.sectionTitle}>Living Preferences</Text>
+  {renderPreferenceList('Living Space', 'livingPreferences', preferences.livingPreferences)}
+  {renderPreferenceList('Room Type', 'roomType', preferences.roomType)}
+  {renderPreferenceList('Smoking', 'smoking', preferences.smoking)}
+  
           
           <View style={styles.budgetSection}>
             <Text style={styles.preferenceTitle}>Budget Range</Text>
@@ -352,15 +432,69 @@ const Profile = () => {
 
         {/* Lifestyle Section */}
         <View style={styles.section}>
+  <Text style={styles.sectionTitle}>Lifestyle</Text>
+  {renderPreferenceList('Cleaning Frequency', 'cleaningFrequency', preferences.cleaningFrequency)}
+  {renderPreferenceList('Sleep Schedule', 'sleepSchedule', preferences.sleepSchedule)}
+  {renderPreferenceList('Guest Frequency', 'guestFrequency', preferences.guestFrequency)}
+  {renderPreferenceList('Noise Tolerance', 'noiseTolerance', preferences.noiseTolerance)}
+  {renderPreferenceList('Social Level', 'socialLevel', preferences.socialLevel)}
+  {renderPreferenceList('Work Schedule', 'workSchedule', preferences.workSchedule)}
+</View>
+
+         {/* Preferences Section */}
+         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Living Preferences</Text>
+          {renderPreferenceList('Living Space', 'livingPreferences', preferences.livingPreferences)}
+          {renderPreferenceList('Room Type', 'roomType', preferences.roomType)}
+          {renderPreferenceList('Smoking', 'smoking', preferences.smoking)}
+          
+          <View style={styles.budgetSection}>
+            <Text style={styles.preferenceTitle}>Budget Range</Text>
+            {editing ? (
+              <View style={styles.budgetInputContainer}>
+                <TextInput
+                  style={styles.budgetInput}
+                  value={preferences.budget.min}
+                  onChangeText={(text) => setPreferences(prev => ({
+                    ...prev,
+                    budget: { ...prev.budget, min: text }
+                  }))}
+                  placeholder="Min"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.budgetDivider}>-</Text>
+                <TextInput
+                  style={styles.budgetInput}
+                  value={preferences.budget.max}
+                  onChangeText={(text) => setPreferences(prev => ({
+                    ...prev,
+                    budget: { ...prev.budget, max: text }
+                  }))}
+                  placeholder="Max"
+                  keyboardType="numeric"
+                />
+              </View>
+            ) : (
+              <Text style={styles.budgetText}>
+                ${preferences.budget.min} - ${preferences.budget.max}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Lifestyle Section */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Lifestyle</Text>
-          {renderPreferenceList('Cleaning Frequency', preferences.cleaningFrequency)}
-          {renderPreferenceList('Sleep Schedule', preferences.sleepSchedule)}
-          {renderPreferenceList('Guest Frequency', preferences.guestFrequency)}
-          {renderPreferenceList('Noise Tolerance', preferences.noiseTolerance)}
-          {renderPreferenceList('Social Level', preferences.socialLevel)}
-          {renderPreferenceList('Work Schedule', preferences.workSchedule)}
+          {renderPreferenceList('Cleaning Frequency', 'cleaningFrequency', preferences.cleaningFrequency)}
+          {renderPreferenceList('Sleep Schedule', 'sleepSchedule', preferences.sleepSchedule)}
+          {renderPreferenceList('Guest Frequency', 'guestFrequency', preferences.guestFrequency)}
+          {renderPreferenceList('Noise Tolerance', 'noiseTolerance', preferences.noiseTolerance)}
+          {renderPreferenceList('Social Level', 'socialLevel', preferences.socialLevel)}
+          {renderPreferenceList('Work Schedule', 'workSchedule', preferences.workSchedule)}
         </View>
       </ScrollView>
+
+      {renderPreferencesModal()}
     </SafeAreaView>
   );
 };
@@ -370,6 +504,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
 
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  option: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+  },
+  selectedOption: {
+    backgroundColor: '#3A3A3A',
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  selectedOptionText: {
+    color: '#FFFFFF',
+  },
+  modalCloseButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+  },
+  modalCloseButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  preferenceHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  editPreferencesText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  budgetInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  budgetInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 8,
+    width: '45%',
+  },
+  budgetDivider: {
+    fontSize: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -383,7 +593,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-
+    backgroundColor: '#fff',
 
     zIndex: 1
   },
